@@ -1,0 +1,8 @@
+import os
+
+from shamiko.gdb.server import create_server
+
+session_dir = os.path.dirname(os.path.abspath(__file__))
+socket_path = os.path.join(session_dir, "session.sock")
+server = create_server(socket_path, session_dir)
+server.start()
