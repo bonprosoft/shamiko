@@ -1,7 +1,9 @@
 import collections
-from typing import Any, DefaultDict, Dict, List, Optional, Type
-
-from shamiko.simple_rpc import client
+try:
+    from typing import Any, DefaultDict, Dict, List, Optional, Type
+    from shamiko.simple_rpc import client
+except ImportError:
+    pass
 
 
 class SerializationPromise(object):

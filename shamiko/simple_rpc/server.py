@@ -3,14 +3,17 @@ import logging
 import os
 import socket
 import threading
-from typing import Any, Dict, Optional
+try:
+    from typing import Any, Dict, Optional
+except ImportError:
+    pass
 
 from shamiko.simple_rpc import reader, serializer
 
 _logger = logging.getLogger(__name__)
 
 
-class SocketServer:
+class SocketServer(object):
     def __init__(self, socket_path):
         # type: (str) -> None
         self._socket_path = socket_path

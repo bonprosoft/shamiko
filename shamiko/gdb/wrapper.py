@@ -1,7 +1,8 @@
 import sys
-from typing import Any, List, Optional, Tuple, Union
-
-import six
+try:
+    from typing import Any, List, Optional, Tuple, Union
+except ImportError:
+    pass
 
 import gdb
 
@@ -235,7 +236,7 @@ class InferiorWrapper:
     @property
     def threads(self):
         # type: () -> List[ThreadWrapper]
-        return list(six.moves.map(ThreadWrapper, self._inferior.threads()))
+        return list(map(ThreadWrapper, self._inferior.threads()))
 
     @property
     def pid(self):
@@ -265,7 +266,7 @@ class GdbWrapper:
 
     def get_inferior(self):
         # type: () -> List[InferiorWrapper]
-        return list(six.moves.map(InferiorWrapper, gdb.inferiors()))
+        return list(map(InferiorWrapper, gdb.inferiors()))
 
     def get_selected_inferior(self):
         # type: () -> InferiorWrapper

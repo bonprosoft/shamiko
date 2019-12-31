@@ -1,4 +1,7 @@
-from typing import List
+try:
+    from typing import List
+except ImportError:
+    pass
 
 
 class BufferedReader:

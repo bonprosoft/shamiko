@@ -2,14 +2,17 @@ import json
 import logging
 import socket
 import threading
-from typing import Any, List, Optional
+try:
+    from typing import Any, List, Optional
+except ImportError:
+    pass
 
 from shamiko.simple_rpc import serializer, reader
 
 _logger = logging.getLogger(__name__)
 
 
-class SocketClient:
+class SocketClient(object):
     def __init__(self, socket_path):
         # type: (str) -> None
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
