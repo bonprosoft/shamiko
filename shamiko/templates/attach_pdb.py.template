@@ -1,0 +1,51 @@
+import io
+import socket
+import sys
+
+SOCKET_PATH = "{{unix_socket_path}}"
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+sock.bind(SOCKET_PATH)
+sock.listen(1)
+connection, address = sock.accept()
+
+stream = connection.makefile("rwb")
+stream.fileno = lambda: connection.fileno()
+
+
+def _exit():
+    connection.shutdown(socket.SHUT_RDWR)
+    sock.shutdown(socket.SHUT_RDWR)
+    connection.close()
+    sock.close()
+
+
+def set_trace():
+    handle = io.TextIOWrapper(stream)
+
+    from pdb import Pdb
+    p = Pdb(completekey="\t", stdin=handle, stdout=handle)
+
+    def do_detach(*arg):
+        """detach
+        Continue execution, close remote session
+        """
+        _exit()
+        p.set_continue()
+
+        # returning 1 means disabling prompt
+        return 1
+
+    # Add detach command
+    p.do_detach = do_detach
+    frame = sys._getframe().f_back.f_back.f_back
+
+    handle.write("[NOTE] `detach` for detaching this remote session.\n")
+    q = p.set_trace(frame)
+
+    if q and hasattr(p, "shell"):
+        q.shell.restore_sys_module_state()
+
+
+set_trace()

@@ -19,17 +19,6 @@ if typing.TYPE_CHECKING:
 _logger = logging.getLogger(__name__)
 
 
-def _get_package_root():
-    # type: () -> str
-    return os.path.dirname(shamiko.__file__)
-
-
-def _get_template_dir():
-    # type: () -> str
-    root = _get_package_root()
-    return os.path.join(root, "templates")
-
-
 class Session:
     def __init__(self, root_dir, pid, executable, context_directory):
         # type: (str, int, str, str) -> None
@@ -55,7 +44,7 @@ class Session:
         # type: () -> None
         os.makedirs(self._session_directory, exist_ok=False)
         shutil.copyfile(
-            os.path.join(_get_template_dir(), "bootstrap.py.template"),
+            os.path.join(shamiko._get_template_dir(), "bootstrap.py.template"),
             self._bootstrap_path,
         )
 
@@ -76,7 +65,7 @@ class Session:
             if i % 10 == 0:
                 _logger.info("Waiting for the session to get ready...")
 
-            time.sleep(0.1)
+            time.sleep(dt)
         else:
             _logger.warn("Failed to communicate with bootstrap script")
             return False
@@ -85,7 +74,7 @@ class Session:
 
     def _gdb_loop(self):
         # type: () -> None
-        package_dir_parent = os.path.dirname(_get_package_root())
+        package_dir_parent = os.path.dirname(shamiko._get_package_root())
         command = [
             "gdb",
             "-q",

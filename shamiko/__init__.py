@@ -7,3 +7,16 @@ try:
 except ImportError:
     from shamiko.app import Shamiko  # NOQA
     from shamiko.session import Session  # NOQA
+
+import os
+
+
+def _get_package_root():
+    # type: () -> str
+    return os.path.dirname(__file__)
+
+
+def _get_template_dir():
+    # type: () -> str
+    root = _get_package_root()
+    return os.path.join(root, "templates")

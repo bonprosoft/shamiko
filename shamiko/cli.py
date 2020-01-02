@@ -1,10 +1,17 @@
 from __future__ import absolute_import
 
 import contextlib
+import os
+import subprocess
+import tempfile
+import threading
+import time
 from typing import Callable, Iterator, Optional
 
 import click
+import jinja2
 
+import shamiko
 from shamiko import proc_utils, session_utils
 from shamiko.gdb_rpc import (
     FrameWrapper,
@@ -54,16 +61,20 @@ def _run(
     thread,  # type: Optional[int]
     frame,  # type: Optional[int]
 ):
-    # type: (...) -> None
+    # type: (...) -> bool
     with _get_inferior(ctx) as inferior:
-        ret = session_utils.traverse_frame(inferior, func, thread, frame)
-        if ret:
-            click.echo("Ran successfully")
-        else:
-            click.echo(
-                "Traversed all matched frames, but couldn't run successfully"
-            )
-            click.echo("HINT: Try without --thread or --frame option")
+        return session_utils.traverse_frame(inferior, func, thread, frame)
+
+
+def _print_result_message(result):
+    # type: (bool) -> None
+    if result:
+        click.echo("Ran successfully")
+    else:
+        click.echo(
+            "Traversed all matched frames, but couldn't run successfully"
+        )
+        click.echo("HINT: Try without --thread or --frame option")
 
 
 @cli.command()
@@ -137,7 +148,7 @@ def run_file(ctx, file_path, thread, frame):
 
         return True
 
-    _run(ctx, impl, thread, frame)
+    _print_result_message(_run(ctx, impl, thread, frame))
 
 
 @cli.command()
@@ -157,7 +168,90 @@ def run_script(ctx, script, thread, frame):
 
         return True
 
-    _run(ctx, impl, thread, frame)
+    _print_result_message(_run(ctx, impl, thread, frame))
+
+
+AVAILABLE_DEBUGGERS = [
+    "pdb",
+]
+
+
+@cli.command()
+@click.option("--thread", type=int, default=None)
+@click.option("--frame", type=int, default=None)
+@click.option(
+    "--debugger", type=click.Choice(AVAILABLE_DEBUGGERS), default=None
+)
+@click.pass_context
+def attach(ctx, thread, frame, debugger):
+    # type: (click.Context, Optional[int], Optional[int], Optional[str]) -> None
+    debugger = debugger or "pdb"
+    assert debugger in AVAILABLE_DEBUGGERS
+
+    template_name = "attach_{}.py.template".format(debugger)
+    template_dir = shamiko._get_template_dir()
+    env = jinja2.Environment(
+        autoescape=False, loader=jinja2.FileSystemLoader(template_dir)
+    )
+    template = env.get_template(template_name)
+    disposed = threading.Event()
+
+    with tempfile.TemporaryDirectory(prefix="shamiko_dbg_") as session_root:
+        socket_path = os.path.join(session_root, "proc.sock")
+        script_path = os.path.join(session_root, "script.py")
+
+        script = template.render(unix_socket_path=socket_path)
+        with open(script_path, "w") as f:
+            f.write(script)
+
+        def connect_stream():
+            # type: () -> None
+            dt = 0.1
+            wait_sec = 100.0
+            max_counter = int(wait_sec / dt)
+
+            for i in range(max_counter):
+                if os.path.exists(socket_path) or disposed.is_set():
+                    break
+
+                if i % 10 == 0:
+                    click.echo("waiting for the session to get ready...")
+
+                time.sleep(dt)
+            else:
+                raise RuntimeError("couldn't open socket. something went wrong")
+
+            if disposed.is_set():
+                return
+
+            process = subprocess.Popen(["nc", "-U", socket_path],)
+
+            click.echo("session opened")
+            while True:
+                if process.poll() is not None:
+                    return
+
+                time.sleep(dt)
+
+        def impl(frame):
+            # type: (FrameWrapper) -> bool
+            try:
+                frame.run_file(script_path)
+            except Exception:
+                return False
+
+            return True
+
+        t = threading.Thread(target=connect_stream)
+        t.start()
+        try:
+            ret = _run(ctx, impl, thread, frame)
+            if not ret:
+                # show message only when traversing is failed
+                _print_result_message(ret)
+        finally:
+            disposed.set()
+        t.join()
 
 
 def _launch_ipshell(pid, session):
@@ -182,7 +276,7 @@ Opened a session to pid={}. You can access it from the variable `session`.
 
 @cli.command()
 @click.pass_context
-def attach(ctx):
+def shell(ctx):
     # type: (click.Context) -> None
     with _get_session(ctx) as session:
         _launch_ipshell(ctx.obj["pid"], session.session)
