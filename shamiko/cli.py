@@ -5,8 +5,7 @@ from typing import Callable, Iterator, Optional
 
 import click
 
-import shamiko.utils
-from shamiko.app import Shamiko
+from shamiko import proc_utils, session_utils
 from shamiko.gdb_rpc import (
     FrameWrapper,
     GdbWrapper,
@@ -23,7 +22,7 @@ from shamiko.session import Session
 @click.pass_context
 def cli(ctx, pid, executable, context):
     # type: (click.Context, int, Optional[str], Optional[str]) -> None
-    if not shamiko.utils.pid_exists(pid):
+    if not proc_utils.pid_exists(pid):
         click.echo("Pid={} doesn't exists.".format(pid))
 
     ctx.obj = {}
@@ -32,89 +31,19 @@ def cli(ctx, pid, executable, context):
     ctx.obj["context"] = context
 
 
-def _visit(
-    inferior,  # type: InferiorWrapper
-    visit_thread,  # type: Callable[[ThreadWrapper], bool]
-    visit_frame,  # type: Callable[[FrameWrapper], bool]
-    frame_predicate,  # type: Callable[[FrameWrapper], bool]
-):
-    # type: (...) -> bool
-    for thread in inferior.threads:
-        if not visit_thread(thread):
-            continue
-
-        thread.switch()
-
-        for frame in thread.get_python_frames():
-            if not visit_frame(frame):
-                continue
-
-            if frame_predicate(frame):
-                return True
-
-    return False
-
-
-def _traverse_frame(
-    inferior,  # type: InferiorWrapper
-    predicate,  # type: Callable[[FrameWrapper], bool]
-    thread_id=None,  # type: Optional[int]
-    frame_idx=None,  # type: Optional[int]
-):
-    # type: (...) -> bool
-
-    def default_thread(_):
-        # type: (ThreadWrapper) -> bool
-        return True
-
-    if thread_id is not None:
-
-        def thread_pred(thread):
-            # type: (ThreadWrapper) -> bool
-            tid = thread.num
-            return tid == thread_id
-
-    else:
-
-        def thread_pred(thread):
-            # type: (ThreadWrapper) -> bool
-            return True
-
-    visit_thread = thread_pred
-
-    if frame_idx is not None:
-
-        def frame_pred(frame):
-            # type: (FrameWrapper) -> bool
-            idx = frame.get_index()
-            return idx == frame_idx
-
-    else:
-
-        def frame_pred(frame):
-            # type: (FrameWrapper) -> bool
-            return True
-
-    visit_frame = frame_pred
-
-    return _visit(inferior, visit_thread, visit_frame, predicate)
-
-
 @contextlib.contextmanager
-def _create_session(ctx):
+def _get_session(ctx):
     # type: (click.Context) -> Iterator[Session]
-    with Shamiko() as smk:
-        session = smk.attach(
-            ctx.obj["pid"], ctx.obj["executable"], ctx.obj["context"]
-        )
-        with session as s:
-            yield s
+    with session_utils.create_session(
+        ctx.obj["pid"], ctx.obj["executable"], ctx.obj["context"]
+    ) as session:
+        yield session
 
 
 @contextlib.contextmanager
-def _get_session_inferior(ctx):
+def _get_inferior(ctx):
     # type: (click.Context) -> Iterator[InferiorWrapper]
-    with _create_session(ctx) as s:
+    with _get_session(ctx) as s:
         inferior = s.session.get_inferior()[0]
         yield inferior
 
@@ -126,9 +55,8 @@ def _run(
     frame,  # type: Optional[int]
 ):
     # type: (...) -> None
-
-    with _get_session_inferior(ctx) as inferior:
-        ret = _traverse_frame(inferior, func, thread, frame)
+    with _get_inferior(ctx) as inferior:
+        ret = session_utils.traverse_frame(inferior, func, thread, frame)
         if ret:
             click.echo("Ran successfully")
         else:
@@ -186,8 +114,10 @@ def inspect(ctx):
         click.echo(fmt)
         return True
 
-    with _get_session_inferior(ctx) as inferior:
-        _visit(inferior, visit_thread, visit_frame, lambda _: False)
+    with _get_inferior(ctx) as inferior:
+        session_utils.visit(
+            inferior, visit_thread, visit_frame, lambda _: False
+        )
 
 
 @cli.command()
@@ -241,7 +171,9 @@ def _launch_ipshell(pid, session):
 Opened a session to pid={}. You can access it from the variable `session`.
 =====================
 
-""".format(pid)
+""".format(
+        pid
+    )
     ipshell = InteractiveShellEmbed(
         config=Config(), banner1=banner, exit_msg="Bye."
     )
@@ -252,7 +184,7 @@ Opened a session to pid={}. You can access it from the variable `session`.
 @click.pass_context
 def attach(ctx):
     # type: (click.Context) -> None
-    with _create_session(ctx) as session:
+    with _get_session(ctx) as session:
         _launch_ipshell(ctx.obj["pid"], session.session)
 
 

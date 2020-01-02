@@ -7,7 +7,7 @@ import threading
 from typing import Any, Dict, Optional
 
 import shamiko.session
-import shamiko.utils
+import shamiko.proc_utils
 
 _logger = logging.getLogger(__name__)
 
@@ -39,13 +39,13 @@ class Shamiko:
     def attach(self, pid, executable=None, context_directory=None):
         # type: (int, Optional[str], Optional[str]) -> shamiko.session.Session
         if executable is None:
-            executable = shamiko.utils.guess_executable(pid)
+            executable = shamiko.proc_utils.guess_executable(pid)
             _logger.info("Guessing executable of PID=%d: %s", pid, executable)
             if executable is None:
                 raise RuntimeError("Failed to guess executable")
 
         if context_directory is None:
-            context_directory = shamiko.utils.guess_context_dir(pid)
+            context_directory = shamiko.proc_utils.guess_context_dir(pid)
             _logger.info("Guessing context dir of PID=%d: %s", pid, context_directory)
             if context_directory is None:
                 context_directory = os.getcwd()
