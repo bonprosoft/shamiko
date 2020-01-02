@@ -77,7 +77,7 @@ def _print_result_message(result):
         click.echo("HINT: Try without --thread or --frame option")
 
 
-@cli.command()
+@cli.command(help="inspect the running process")
 @click.pass_context
 def inspect(ctx):
     # type: (click.Context) -> None
@@ -131,7 +131,7 @@ def inspect(ctx):
         )
 
 
-@cli.command()
+@cli.command(help="inject a python script file into the running process")
 @click.argument("file_path", type=click.Path(exists=True))
 @click.option("--thread", type=int, default=None)
 @click.option("--frame", type=int, default=None)
@@ -151,7 +151,7 @@ def run_file(ctx, file_path, thread, frame):
     _print_result_message(_run(ctx, impl, thread, frame))
 
 
-@cli.command()
+@cli.command(help="inject a python code into the running process")
 @click.argument("script", type=str)
 @click.option("--thread", type=int, default=None)
 @click.option("--frame", type=int, default=None)
@@ -176,7 +176,7 @@ AVAILABLE_DEBUGGERS = [
 ]
 
 
-@cli.command()
+@cli.command(help="attach a debugger to the running process")
 @click.option("--thread", type=int, default=None)
 @click.option("--frame", type=int, default=None)
 @click.option(
@@ -274,7 +274,7 @@ Opened a session to pid={}. You can access it from the variable `session`.
     ipshell()
 
 
-@cli.command()
+@cli.command(help="launch an interactive shell")
 @click.pass_context
 def shell(ctx):
     # type: (click.Context) -> None
