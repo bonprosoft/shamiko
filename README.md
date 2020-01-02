@@ -1,4 +1,6 @@
 # shamiko
+[![PyPI](https://img.shields.io/pypi/v/shamiko.svg)](https://pypi.org/project/shamiko/)
+[![PyPI Supported Python Versions](https://img.shields.io/pypi/pyversions/shamiko.svg)](https://pypi.org/project/shamiko/)
 [![GitHub license](https://img.shields.io/github/license/bonprosoft/shamiko.svg)](https://github.com/bonprosoft/shamiko)
 
 shamiko is a library for inspecting running Python processes.
@@ -6,8 +8,8 @@ shamiko is a library for inspecting running Python processes.
 It can
 - inspect Python processes
   - obtain information about current frames and threads of the running process
-- inject arbitrary code into specified frame and thread
-- attach pdb
+- inject arbitrary code into specified frame and thread of the process
+- attach the running process with pdb
 
 ## Install
 
@@ -17,7 +19,7 @@ pip install shamiko
 
 ## CLI
 
-shamiko provides the command line interface.
+shamiko provides the command-line interface.
 
 ```sh
 shamiko --help
@@ -50,7 +52,7 @@ inspect the running process
 Usage: shamiko PID inspect
 ```
 
-![](./imgs/inspect.gif)
+![](https://raw.githubusercontent.com/bonprosoft/shamiko/master/imgs/inspect.gif)
 
 ### attach
 
@@ -60,12 +62,12 @@ attach a debugger to the running process
 Usage: shamiko PID attach [OPTIONS]
 
 Options:
-  --thread (int): thread id where you can obtain by inspect command
-  --frame (int): frame id where you can obtain by inspect command
+  --thread (int): thread id where you can obtain by `inspect` command
+  --frame (int): frame id where you can obtain by `inspect` command
   --debugger (str): debugger type. available debuggers: [pdb]
 ```
 
-![](./imgs/attach.gif)
+![](https://raw.githubusercontent.com/bonprosoft/shamiko/master/imgs/attach.gif)
 
 ### run-file
 
@@ -75,14 +77,14 @@ inject a python script file into the running process
 Usage: shamiko PID run-file [OPTIONS] FILE_PATH
 
 Arguments:
-  FILE_PATH (str): a path of python script that you want to inject into given PID
+  FILE_PATH (str): a path of the python script that you want to inject into given PID
 
 Options:
-  --thread (int): thread id where you can obtain by inspect command
-  --frame (int): frame id where you can obtain by inspect command
+  --thread (int): thread id where you can obtain by `inspect` command
+  --frame (int): frame id where you can obtain by `inspect` command
 ```
 
-![](./imgs/runfile.gif)
+![](https://raw.githubusercontent.com/bonprosoft/shamiko/master/imgs/runfile.gif)
 
 ### run-script
 
@@ -95,11 +97,11 @@ Arguments:
   SCRIPT (str): a python code that you want to inject into given PID
 
 Options:
-  --thread (int): thread id where you can obtain by inspect command
-  --frame (int): frame id where you can obtain by inspect command
+  --thread (int): thread id where you can obtain by `inspect` command
+  --frame (int): frame id where you can obtain by `inspect` command
 ```
 
-![](./imgs/runscript.gif)
+![](https://raw.githubusercontent.com/bonprosoft/shamiko/master/imgs/runscript.gif)
 
 ### shell
 
@@ -109,7 +111,7 @@ launch an interactive shell
 Usage: shamiko PID shell
 ```
 
-![](./imgs/shell.gif)
+![](https://raw.githubusercontent.com/bonprosoft/shamiko/master/imgs/shell.gif)
 
 ## FAQ
 
@@ -122,7 +124,7 @@ again as the root user.  For more details, see /etc/sysctl.d/10-ptrace.conf
 ptrace: Operation not permitted.
 ```
 
-In most distributions, executing ptrace of non-child process by non-super user is disallowed.
+In most distributions, executing ptrace of non-child processes by a non-super user is disallowed.
 You can disable this temporarily by
 ```sh
 echo 0 > /proc/sys/kernel/yama/ptrace_scope

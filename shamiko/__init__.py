@@ -5,6 +5,10 @@
 try:
     import gdb  # NOQA
 except ImportError:
+    import shutil
+    if shutil.which("gdb") is None:
+        raise RuntimeError("gdb command is required") from None
+
     from shamiko.app import Shamiko  # NOQA
     from shamiko.session import Session  # NOQA
 
