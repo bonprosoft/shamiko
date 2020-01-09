@@ -178,13 +178,12 @@ AVAILABLE_DEBUGGERS = [
 
 @cli.command(help="attach a debugger to the running process")
 @click.option("--thread", type=int, default=None)
-@click.option("--frame", type=int, default=None)
 @click.option(
     "--debugger", type=click.Choice(AVAILABLE_DEBUGGERS), default=None
 )
 @click.pass_context
-def attach(ctx, thread, frame, debugger):
-    # type: (click.Context, Optional[int], Optional[int], Optional[str]) -> None
+def attach(ctx, thread, debugger):
+    # type: (click.Context, Optional[int], Optional[str]) -> None
     debugger = debugger or "pdb"
     assert debugger in AVAILABLE_DEBUGGERS
 
@@ -245,7 +244,7 @@ def attach(ctx, thread, frame, debugger):
         t = threading.Thread(target=connect_stream)
         t.start()
         try:
-            ret = _run(ctx, impl, thread, frame)
+            ret = _run(ctx, impl, thread, None)
             if not ret:
                 # show message only when traversing is failed
                 _print_result_message(ret)

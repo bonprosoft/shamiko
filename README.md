@@ -63,7 +63,6 @@ Usage: shamiko PID attach [OPTIONS]
 
 Options:
   --thread (int): thread id where you can obtain by `inspect` command
-  --frame (int): frame id where you can obtain by `inspect` command
   --debugger (str): debugger type. available debuggers: [pdb]
 ```
 
